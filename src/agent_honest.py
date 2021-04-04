@@ -1,0 +1,2 @@
+class AgentHonest(Agent):
+    NotImplemented

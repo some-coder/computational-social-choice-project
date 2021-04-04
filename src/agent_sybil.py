@@ -1,0 +1,2 @@
+class AgentSybil(Agent):
+    NotImplemented
