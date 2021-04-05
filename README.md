@@ -1,2 +1,4 @@
-# computational-social-choice-project
+# Computational Social Choice Project
+
 Here's the computational social choice project.
+
