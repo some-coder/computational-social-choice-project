@@ -105,7 +105,7 @@ main <- function() {
 						   str_replace(csv, '(\\.)(csv)', '.pdf'))
 		ggsave(save_loc,
 			   plot=plt,
-			   device=pdf())
+			   device='pdf')
 	}
 	return('Success.')
 }
