@@ -1,8 +1,7 @@
-import typing
+from typing import NewType
 from agent import Agent
 
-Transaction = tuple(Agent, Agent, float)    # source, destination, amount
-Block = list(Transaction)
+Transaction = NewType('Transaction', (Agent(), Agent(), float))    # source, destination, amount
 
 class Block:
     """

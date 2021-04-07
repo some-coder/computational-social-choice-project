@@ -7,7 +7,7 @@ from blockchain import Blockchain
 
 class World():
     
-    self.par: dict = {
+    par: dict = {
         'num_epochs': 100,        # number of simulated epochs or blocks
         'num_agents': 1000,       # number of agents in simulation
         'frac_sybils': 0.1,       # fraction of agents that are Sybils
@@ -24,7 +24,7 @@ class World():
 
     # generate transaction history for a set number of epochs
     def run(self):
-        for in range(self.par['num_epochs']):
+        for i in range(par['num_epochs']):
 
             block: Block = Block()              # each epoch creates a new block
             random.shuffle(self.agents)         # shuffle the agent list

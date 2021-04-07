@@ -3,7 +3,7 @@ import random
 class Agent:
 
     # agent parameters applyign to all agents
-    self.par = {
+    par = {
         'init_balance': 100,                # initial balance
         'init_balance_deviation': 10,       # deviation around initial balance
         'donate_prob': 0.01,                # normalized probability of an agent to trade per epoch
@@ -25,7 +25,7 @@ class Agent:
         return True if min_balance and chance else False
 
     # find a partner to donate to
-    def find_donation_partner(self, agents) -> Agent:
+    def find_donation_partner(self, agents) -> object:
         agents = agents.copy()
         agents.remove(self)             # agent removes itself from list of agents
         return random.sample(agents)    # sample from the remaining list
