@@ -1,2 +1,37 @@
-__pycache__
-.vscode
+# Binaries, executables
+*
+!*.*
+!*/
+
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints
+
+
+# Photos, PDFs, CSVs
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.csv
+!sybil_resiliency/results/*.csv
+!sybil_resiliency/results/**/*.csv
+
+# R
+.Rhistory
+
+
+# MacOS
+.DS_Store
+__MACOSX
+*.dSYM
+
+
+# JetBrains
+.idea
+
+# VSCode
+.VSCode
