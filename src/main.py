@@ -1,9 +1,9 @@
 import seaborn as sns
 
-import world
+from world import World
 
 def main():
-    world: class = World()
+    world: object = World()
     world.run()
     world.save()
     world.plot()
