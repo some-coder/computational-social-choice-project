@@ -2,6 +2,8 @@ import numpy as np
 import os
 import pandas as pd
 import time
+from collections import Counter
+
 
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -15,6 +17,7 @@ class ConsensusProtocol(Enum):
 	PROOF_OF_STAKE = 'pos'
 	PROOF_OF_ACTIVITY = 'poa'
 	ALGORAND_PROOF = 'algorand'
+	FNP2 = 'fnp2'
 	CONNITZER_TWO_ALT = 'conn_two'
 	CONNITZER_MANY_ALT = 'conn_many'
 
@@ -27,6 +30,7 @@ class Network:
 	SYBILS_PER_ADVERSARY_MIN_MAX: Tuple[int, int] = (10, 20)  # both ends inclusive
 	COMPUTING_POWER_ALPHA: float = float(np.log(5) / np.log(4))  # to get close to the 80-20 rule
 	ASSET_SIZE_ALPHA: float = float(np.log(5) / np.log(4))
+	COST: float = float(0.15)	#Conitzer 0.15 cost
 
 	def __init__(
 			self,
@@ -55,6 +59,7 @@ class Network:
 		self.n: int = self._num_honest + int(np.sum(self._sybils_per_adversary))
 		self.computing_powers = self._user_computing_powers()
 		self.asset_sizes = self._user_asset_sizes()
+		self.cost = Network.COST
 
 	def _distributed_across_sybils(
 				self,
@@ -143,6 +148,48 @@ class Network:
 		choices: np.ndarray = self._rng.choice(a=[0, 1], size=self.n, replace=True)
 		return choices.sum() in (0, self.n)  # everyone voted either False or True
 
+	def sybils_win_fnp2(self) -> bool:
+		"""
+		Determines whether the network voted unanimously for one alternative among two.
+
+		Note that if a unanimous decision is reached, the sybils did not succeed in overthrowing the 'sybil-free'
+		social choice, as this is what the honest users wanted as well.
+
+		:return: The question's answer.
+		"""
+		# generate honest preferences for honest agents
+		choices: np.ndarray = self._rng.choice(a=[0, 1], size=self._num_honest, replace=True)
+		state = Counter(choices)
+		majority_preference = max(state, key=state.get)
+		# assume one adversary, all their sybils want the same thing
+		num_sybils = self.n - self._num_honest
+		sybil_preference = self._rng.choice(a=[0, 1], size=1, replace=True)[0]
+
+		if sybil_preference == 0: 
+			prefer_zero = num_sybils + state['0']
+			prefer_one = state['1']
+		else:
+			prefer_zero =  state['0']
+			prefer_one = num_sybils + state['1']
+
+
+		probability_picking_zero = min(1, (1/2)*self.cost*(prefer_zero - prefer_one)) # probability of picking the 0
+		probability_picking_one = 1 - probability_picking_zero
+
+		if probability_picking_one >= probability_picking_zero:
+			pick = 1
+		else:
+			pick = 0
+
+		#print(majority_preference, sybil_preference, pick, (pick == sybil_preference != majority_preference))
+
+		if pick == sybil_preference != majority_preference:
+			return True
+		else:
+			return False
+
+
+
 
 def sybils_win_consensus_round(
 		net: Network,
@@ -192,6 +239,9 @@ def sybils_win_consensus_round(
 			return False
 		else:
 			return sybils_win_consensus_round(net, ConsensusProtocol.CONNITZER_TWO_ALT, coalition_size, rng)
+	elif prt is ConsensusProtocol.FNP2:
+		return net.sybils_win_fnp2()
+
 	raise NotImplementedError('Consensus protocol \'%s\' is not implemented (yet).' % (prt.value,))
 
 
@@ -271,7 +321,7 @@ if __name__ == '__main__':
 	col_siz: int = int(5e0)
 	t_start: float = time.time()
 	for n_honest in (100,):
-		for n_adversary in (1, 2, 3, 4, 5):
+		for n_adversary in (1, 2):
 			print('EXPERIMENT (honest: %d, adversary: %d).' % (n_honest, n_adversary))
 			t_start_exp: float = time.time()
 			sre = SybilResiliencyExperiment(n_honest, n_adversary, num_eps, num_its, all_protocols, col_siz)
