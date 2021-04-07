@@ -14,23 +14,23 @@ class World():
     }
 
     def __init__(self):
-        self.agents: list = init_agents()
+        self.agents: list = self.init_agents()
         self.blockchain: Blockchain = Blockchain()
 
-        def init_agents() -> list[Agent]:
-            num_agents, frac_sybils = self.par['num_agents'], self.par['frac_sybils']
-            agents_honest = [AgentHonest() for i in range(num_agents * (1-frac_sybils))]
-            agents_sybil = [AgentSybil() for i in range(num_agents * frac_sybils)]
+    def init_agents(self) -> list:
+        num_agents, frac_sybils = self.par['num_agents'], self.par['frac_sybils']
+        agents_honest = [AgentHonest() for i in range(int(num_agents * (1-frac_sybils)))]
+        agents_sybil = [AgentSybil() for i in range(int(num_agents * frac_sybils))]
+        return agents_honest + agents_sybil
 
     # generate transaction history for a set number of epochs
     def run(self):
-        for i in range(par['num_epochs']):
+        for i in range(self.par['num_epochs']):
 
             block: Block = Block()              # each epoch creates a new block
             random.shuffle(self.agents)         # shuffle the agent list
 
             for agent in self.agents:
-
                 if agent.donation_decision() == False: continue       # if agent chooses to want to donate
                 
                 partner = agent.find_donation_partner(self.agents)  # then it will try to find a partner to donate to

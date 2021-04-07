@@ -17,3 +17,6 @@ class Blockchain:
     # add a block to the blockchain after each epoch
     def add_block(self, block: Block):
         self.blocks.append(block)
+    
+    def __str__(self):
+        return str([str(block) for block in self.blocks])

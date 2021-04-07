@@ -18,3 +18,6 @@ class Block:
     # append a single transaction to the block
     def add_transaction(self, transaction: Transaction):
         self.transactions.append(transaction)
+
+    def __str__(self):
+        return str(self.transactions)
