@@ -3,7 +3,7 @@ import random
 from agent_sybil import AgentSybil
 from agent_honest import AgentHonest
 from block import Block
-from history import History
+from blockchain import Blockchain
 
 class World():
     
@@ -15,8 +15,9 @@ class World():
 
     def __init__(self):
         self.agents: list = init_agents()
+        self.blockchain: Blockchain = Blockchain()
 
-        def init_agents() -> list[object]:
+        def init_agents() -> list[Agent]:
             num_agents, frac_sybils = self.par['num_agents'], self.par['frac_sybils']
             agents_honest = [AgentHonest() for i in range(num_agents * (1-frac_sybils))]
             agents_sybil = [AgentSybil() for i in range(num_agents * frac_sybils)]
@@ -25,16 +26,22 @@ class World():
     def run(self):
         for in range(self.par['num_epochs']):
 
+            block: Block = Block()              # each epoch creates a new block
             random.shuffle(self.agents)         # shuffle the agent list
 
             for agent in self.agents:
 
                 if agent.donation_decision() == False: continue       # if agent chooses to want to donate
                 
-                partner = agent.find_donation_partner(self.agents)             # then it will try to find a partner to donate to
+                partner = agent.find_donation_partner(self.agents)  # then it will try to find a partner to donate to
                 amount = agent.determine_amount()                   # then it will determine an amount to donate
                 agent.donate(partner, amount)                       # an amount is transferred to the partner unilaterally (without its agreement)
-            
+                
+                transaction: Transaction = (agent, partner, amount) # bundle transaction
+                block.add_transaction(transaction)                  # add transaction to block
+
+            self.blockchain.add_block(block)                        # append block to blockchain
+
     def save(self):
         NotImplemented
 

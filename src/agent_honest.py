@@ -1,2 +1,7 @@
+from agent import Agent
+
 class AgentHonest(Agent):
-    NotImplemented
+
+    def __init__(self):
+        Agent.__init__(self)
+
