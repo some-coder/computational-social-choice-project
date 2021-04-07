@@ -33,3 +33,5 @@ __MACOSX
 # JetBrains
 .idea
 
+# VSCode
+.VSCode
