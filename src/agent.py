@@ -28,7 +28,7 @@ class Agent:
     def find_donation_partner(self, agents) -> object:
         agents = agents.copy()
         agents.remove(self)             # agent removes itself from list of agents
-        return random.sample(agents)    # sample from the remaining list
+        return random.sample(agents, 1)[0]    # sample from the remaining list
     
     # determine amount to be donated
     def determine_amount(self) -> float:
