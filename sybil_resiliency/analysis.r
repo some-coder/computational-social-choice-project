@@ -21,7 +21,7 @@ renamed_protocols <- function(originals) {
 			switch(original,
 				   'pow'='Proof of Work',
 				   'pos'='Proof of Stake',
-				   'poa'='Proof of Authority',
+				   'poa'='Proof of Activity',
 				   'algorand'='Algorand Proof',
 				   'conn_two'='Connitzer: Two Alternatives',
 				   'conn_many'='Connitzer: Many Alternatives'))
