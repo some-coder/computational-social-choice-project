@@ -6,7 +6,7 @@ load_libraries <- function() {
 				require(lib, character.only=TRUE)
 			},
 			warning=function(cond) {
-				install.packages(lib)
+				install.packages(lib, repos="http://cran.us.r-project.org")
 			}
 		)
 
