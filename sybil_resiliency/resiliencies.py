@@ -18,8 +18,8 @@ class ConsensusProtocol(Enum):
 	PROOF_OF_ACTIVITY = 'poa'
 	ALGORAND_PROOF = 'algorand'
 	FNP2 = 'fnp2'
-	CONNITZER_TWO_ALT = 'conn_two'
-	CONNITZER_MANY_ALT = 'conn_many'
+	CONITZER_TWO_ALT = 'con_two'
+	CONITZER_MANY_ALT = 'con_many'
 
 
 class Network:
@@ -30,7 +30,7 @@ class Network:
 	SYBILS_PER_ADVERSARY_MIN_MAX: Tuple[int, int] = (10, 20)  # both ends inclusive
 	COMPUTING_POWER_ALPHA: float = float(np.log(5) / np.log(4))  # to get close to the 80-20 rule
 	ASSET_SIZE_ALPHA: float = float(np.log(5) / np.log(4))
-	COST: float = float(0.15)	#Conitzer 0.15 cost
+	COST: float = float(0.15)  # Conitzer 0.15 cost
 
 	def __init__(
 			self,
@@ -59,7 +59,6 @@ class Network:
 		self.n: int = self._num_honest + int(np.sum(self._sybils_per_adversary))
 		self.computing_powers = self._user_computing_powers()
 		self.asset_sizes = self._user_asset_sizes()
-		self.cost = Network.COST
 
 	def _distributed_across_sybils(
 				self,
@@ -158,37 +157,40 @@ class Network:
 		:return: The question's answer.
 		"""
 		# generate honest preferences for honest agents
+		if self._num_adversaries > 1:
+			raise ValueError('FNP-2 assumes there is only one adversary (got %d)!' % (self._num_adversaries,))
 		choices: np.ndarray = self._rng.choice(a=[0, 1], size=self._num_honest, replace=True)
 		state = Counter(choices)
-		majority_preference = max(state, key=state.get)
+		majority_preference = max(state)
 		# assume one adversary, all their sybils want the same thing
 		num_sybils = self.n - self._num_honest
-		sybil_preference = self._rng.choice(a=[0, 1], size=1, replace=True)[0]
+		sybil_preference: int = int(self._rng.choice(a=[0, 1], size=1, replace=True)[0])
 
 		if sybil_preference == 0: 
-			prefer_zero = num_sybils + state['0']
-			prefer_one = state['1']
+			prefer_zero = num_sybils + state[0]
+			prefer_one = state[1]
 		else:
-			prefer_zero =  state['0']
-			prefer_one = num_sybils + state['1']
+			prefer_zero = state[0]
+			prefer_one = num_sybils + state[0]
 
-
-		probability_picking_zero = min(1, (1/2)*self.cost*(prefer_zero - prefer_one)) # probability of picking the 0
-		probability_picking_one = 1 - probability_picking_zero
-
-		if probability_picking_one >= probability_picking_zero:
-			pick = 1
+		if prefer_zero >= prefer_one:
+			probability_picking_zero: float = \
+				1.0 if prefer_zero > prefer_one == 0 else \
+				min(1.0, (1.0 / 2.0) + Network.COST * (prefer_zero - prefer_one))
+			probability_picking_one = 1 - probability_picking_zero
 		else:
-			pick = 0
+			probability_picking_one: float = \
+				1.0 if prefer_one > prefer_zero == 0 else \
+				min(1.0, (1.0 / 2.0) + Network.COST * (prefer_one - prefer_zero))
+			probability_picking_zero = 1 - probability_picking_one
 
-		#print(majority_preference, sybil_preference, pick, (pick == sybil_preference != majority_preference))
+		pick: int = int(self._rng.choice(a=[0, 1], size=1, p=(probability_picking_zero, probability_picking_one)))
 
-		if pick == sybil_preference != majority_preference:
+		# if pick == sybil_preference != majority_preference:
+		if pick == sybil_preference and pick != majority_preference:
 			return True
 		else:
 			return False
-
-
 
 
 def sybils_win_consensus_round(
@@ -226,22 +228,21 @@ def sybils_win_consensus_round(
 		return \
 			sybils_win_consensus_round(net, ConsensusProtocol.PROOF_OF_ACTIVITY, coalition_size, rng) and \
 			sybils_win_consensus_round(net, ConsensusProtocol.PROOF_OF_ACTIVITY, coalition_size, rng)
-	elif prt is ConsensusProtocol.CONNITZER_TWO_ALT:
+	elif prt is ConsensusProtocol.CONITZER_TWO_ALT:
 		if net.network_reached_unanimous_two_alternative_decision():
 			return False
 		else:
 			return net.is_sybil(rng.choice(a=list(range(net.n))))
-	elif prt is ConsensusProtocol.CONNITZER_MANY_ALT:
+	elif prt is ConsensusProtocol.CONITZER_MANY_ALT:
 		identities: Tuple[int, int] = tuple(rng.choice(a=list(range(net.n)), size=2))  # with replacement for now
 		if net.sybils_belong_to_same_user(list(identities)):
 			return True
 		elif not net.is_sybil(identities[0]) and not net.is_sybil(identities[1]):
 			return False
 		else:
-			return sybils_win_consensus_round(net, ConsensusProtocol.CONNITZER_TWO_ALT, coalition_size, rng)
+			return sybils_win_consensus_round(net, ConsensusProtocol.CONITZER_TWO_ALT, coalition_size, rng)
 	elif prt is ConsensusProtocol.FNP2:
 		return net.sybils_win_fnp2()
-
 	raise NotImplementedError('Consensus protocol \'%s\' is not implemented (yet).' % (prt.value,))
 
 
@@ -321,7 +322,7 @@ if __name__ == '__main__':
 	col_siz: int = int(5e0)
 	t_start: float = time.time()
 	for n_honest in (100,):
-		for n_adversary in (1, 2):
+		for n_adversary in (1,):
 			print('EXPERIMENT (honest: %d, adversary: %d).' % (n_honest, n_adversary))
 			t_start_exp: float = time.time()
 			sre = SybilResiliencyExperiment(n_honest, n_adversary, num_eps, num_its, all_protocols, col_siz)

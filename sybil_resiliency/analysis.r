@@ -23,8 +23,10 @@ renamed_protocols <- function(originals) {
 				   'pos'='Proof of Stake',
 				   'poa'='Proof of Activity',
 				   'algorand'='Algorand Proof',
-				   'conn_two'='Connitzer: Two Alternatives',
-				   'conn_many'='Connitzer: Many Alternatives'))
+				   'fnp2'='FNP-2',
+				   'avalanche'='Avalanche',
+				   'con_two'='Conitzer: Two Alternatives',
+				   'con_many'='Conitzer: Many Alternatives'))
 	}
 	return(out)
 }
@@ -39,8 +41,10 @@ protocol_colors <- function(protocols) {
 				 	   'pos'='#d95f02',
 				 	   'poa'='#7570b3',
 				 	   'algorand'='#e7298a',
-				 	   'conn_two'='#66a61e',
-				 	   'conn_many'='#e6ab02'))
+				 	   'fnp2'='#66a61e',
+				 	   'avalanche'='#e6ab02',
+				 	   'con_two'='#a6761d',
+				 	   'con_many'='#666666'))
 	}
 	return(out)
 }
