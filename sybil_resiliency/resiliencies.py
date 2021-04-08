@@ -101,7 +101,7 @@ class Network:
 
 		self._num_honest = self._num_total - int(np.sum(self._sybils_per_adversary))	
 		self.n: int = self._num_honest + int(np.sum(self._sybils_per_adversary))
-		print("n = %d, honest = %d, sybil = %d" % (self.n, self._num_honest, int(np.sum(self._sybils_per_adversary))))
+		# print("n = %d, honest = %d, sybil = %d" % (self.n, self._num_honest, int(np.sum(self._sybils_per_adversary))))
 		self.computing_powers = self._user_computing_powers()
 		self.asset_sizes = self._user_asset_sizes()
 
