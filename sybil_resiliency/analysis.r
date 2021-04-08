@@ -24,9 +24,11 @@ renamed_protocols <- function(originals) {
 				   'poa'='Proof of Activity',
 				   'algorand'='Algorand Proof',
 				   'fnp2'='FNP-2',
+				   'ouroboros'='Ouroboros',
 				   'avalanche'='Avalanche',
 				   'con_two'='Conitzer: Two Alternatives',
-				   'con_many'='Conitzer: Many Alternatives'))
+				   'con_many'='Conitzer: Many Alternatives',
+				   'majority'=''))
 	}
 	return(out)
 }
@@ -37,14 +39,16 @@ protocol_colors <- function(protocols) {
 	for (protocol in protocols) {
 		out <- c(out,
 				 switch(protocol,
-				 	   'pow'='#1b9e77',
-				 	   'pos'='#d95f02',
-				 	   'poa'='#7570b3',
-				 	   'algorand'='#e7298a',
-				 	   'fnp2'='#66a61e',
-				 	   'avalanche'='#e6ab02',
-				 	   'con_two'='#a6761d',
-				 	   'con_many'='#666666'))
+				 	   'pow'='#a6cee3',
+				 	   'pos'='#1f78b4',
+				 	   'poa'='#b2df8a',
+				 	   'algorand'='#33a02c',
+				 	   'fnp2'='#fb9a99',
+				 	   'ouroboros'='#e31a1c',
+				 	   'avalanche'='#fdbf6f',
+				 	   'con_two'='#ff7f00',
+				 	   'con_many'='#cab2d6',
+				 	   'majority'='#6a3d9a'))
 	}
 	return(out)
 }
