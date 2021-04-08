@@ -28,7 +28,7 @@ renamed_protocols <- function(originals) {
 				   'avalanche'='Avalanche',
 				   'con_two'='Conitzer: Two Alternatives',
 				   'con_many'='Conitzer: Many Alternatives',
-				   'majority'=''))
+				   'majority'='Majority'))
 	}
 	return(out)
 }

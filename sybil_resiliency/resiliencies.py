@@ -22,7 +22,7 @@ class ConsensusProtocol(Enum):
 	FNP2 = 'fnp2'
 	CONITZER_TWO_ALT = 'con_two'
 	CONITZER_MANY_ALT = 'con_many'
-	MAJORITY = 'majority'  # TODO: Implement.
+	MAJORITY = 'majority'
 
 
 class Network:
@@ -34,6 +34,40 @@ class Network:
 	COMPUTING_POWER_ALPHA: float = float(np.log(5) / np.log(4))  # to get close to the 80-20 rule
 	ASSET_SIZE_ALPHA: float = float(np.log(5) / np.log(4))
 	COST: float = float(0.15)  # Conitzer 0.15 cost
+
+	class TwoAlternativeElection:
+
+		ALTERNATIVES: Tuple[str, str] = ('a', 'b')
+
+		def __init__(self, num_honest: int, num_adversary: int, n: int, rng: np.random.Generator) -> None:
+			if num_adversary > 1:
+				raise ValueError(
+					'A two-alternative election requires at most one adversary (got %d).' %
+					(num_adversary,))
+			self._num_honest = num_honest
+			self._num_adversary = num_adversary
+			self._n = n
+			self._rng = rng
+			self.number_votes_a: int
+			self.number_votes_b: int
+			self.honest_majority_choice: str
+			self.sybil_choice: str
+			self._initialise_election()
+
+		def _initialise_election(self) -> None:
+			choices: np.ndarray = self._rng.choice(
+				a=Network.TwoAlternativeElection.ALTERNATIVES, size=self._num_honest,
+				replace=True)
+			ctr = Counter(choices)
+			self.honest_majority_choice = max(ctr)
+			num_sybils = self._n - self._num_honest
+			self.sybil_choice: str = self._rng.choice(a=Network.TwoAlternativeElection.ALTERNATIVES)
+			if self.sybil_choice == Network.TwoAlternativeElection.ALTERNATIVES[0]:
+				self.number_votes_a = num_sybils + ctr[Network.TwoAlternativeElection.ALTERNATIVES[0]]
+				self.number_votes_b = ctr[Network.TwoAlternativeElection.ALTERNATIVES[1]]
+			else:  # preference of sybils for B
+				self.number_votes_a = ctr[Network.TwoAlternativeElection.ALTERNATIVES[0]]
+				self.number_votes_b = num_sybils + ctr[Network.TwoAlternativeElection.ALTERNATIVES[1]]
 
 	def __init__(
 			self,
@@ -152,48 +186,36 @@ class Network:
 
 	def sybils_win_fnp2(self) -> bool:
 		"""
-		Determines whether the network voted unanimously for one alternative among two.
-
-		Note that if a unanimous decision is reached, the sybils did not succeed in overthrowing the 'sybil-free'
-		social choice, as this is what the honest users wanted as well.
+		Determines whether in FNP-2 the sybils won the consensus round.
 
 		:return: The question's answer.
 		"""
-		# generate honest preferences for honest agents
-		if self._num_adversaries > 1:
-			raise ValueError('FNP-2 assumes there is only one adversary (got %d)!' % (self._num_adversaries,))
-		choices: np.ndarray = self._rng.choice(a=[0, 1], size=self._num_honest, replace=True)
-		state = Counter(choices)
-		majority_preference = max(state)
-		# assume one adversary, all their sybils want the same thing
-		num_sybils = self.n - self._num_honest
-		sybil_preference: int = int(self._rng.choice(a=[0, 1], size=1, replace=True)[0])
-
-		if sybil_preference == 0: 
-			prefer_zero = num_sybils + state[0]
-			prefer_one = state[1]
+		elc = Network.TwoAlternativeElection(self._num_honest, self._num_adversaries, self.n, self._rng)
+		if elc.number_votes_a >= elc.number_votes_b:
+			probability_picking_a: float = \
+				1.0 if elc.number_votes_a > elc.number_votes_b == 0 else \
+				min(1.0, (1.0 / 2.0) + Network.COST * (elc.number_votes_a - elc.number_votes_b))
+			probability_picking_b = 1 - probability_picking_a
 		else:
-			prefer_zero = state[0]
-			prefer_one = num_sybils + state[0]
+			probability_picking_b: float = \
+				1.0 if elc.number_votes_b > elc.number_votes_a == 0 else \
+				min(1.0, (1.0 / 2.0) + Network.COST * (elc.number_votes_b - elc.number_votes_a))
+			probability_picking_a = 1 - probability_picking_b
+		pick: str = self._rng.choice(
+			a=Network.TwoAlternativeElection.ALTERNATIVES,
+			p=(probability_picking_a, probability_picking_b))
+		return pick == elc.sybil_choice and pick != elc.honest_majority_choice
 
-		if prefer_zero >= prefer_one:
-			probability_picking_zero: float = \
-				1.0 if prefer_zero > prefer_one == 0 else \
-				min(1.0, (1.0 / 2.0) + Network.COST * (prefer_zero - prefer_one))
-			probability_picking_one = 1 - probability_picking_zero
-		else:
-			probability_picking_one: float = \
-				1.0 if prefer_one > prefer_zero == 0 else \
-				min(1.0, (1.0 / 2.0) + Network.COST * (prefer_one - prefer_zero))
-			probability_picking_zero = 1 - probability_picking_one
+	def sybils_win_majority(self) -> bool:
+		"""
+		Determines whether in the majority consensus rule, the sybils won the round.
 
-		pick: int = int(self._rng.choice(a=[0, 1], size=1, p=(probability_picking_zero, probability_picking_one)))
-
-		# if pick == sybil_preference != majority_preference:
-		if pick == sybil_preference and pick != majority_preference:
-			return True
-		else:
-			return False
+		:return: The question's answer.
+		"""
+		elc = Network.TwoAlternativeElection(self._num_honest, self._num_adversaries, self.n, self._rng)
+		pick: str = Network.TwoAlternativeElection.ALTERNATIVES[0] if elc.number_votes_a > elc.number_votes_b else \
+			Network.TwoAlternativeElection.ALTERNATIVES[1]
+		return pick == elc.sybil_choice and pick != elc.honest_majority_choice
 
 
 def sybils_win_consensus_round(
@@ -242,7 +264,7 @@ def sybils_win_consensus_round(
 		# assuming a fully connected graph the protocol approximates committee voting
 		# 	with a committee size of all nodes
 		return sybils_win_consensus_round(net, ConsensusProtocol.PROOF_OF_ACTIVITY, net.n, rng)
-	elif prt is ConsensusProtocol.CONNITZER_TWO_ALT:
+	elif prt is ConsensusProtocol.CONITZER_TWO_ALT:
 		if net.network_reached_unanimous_two_alternative_decision():
 			return False
 		else:
@@ -257,6 +279,8 @@ def sybils_win_consensus_round(
 			return sybils_win_consensus_round(net, ConsensusProtocol.CONITZER_TWO_ALT, coalition_size, rng)
 	elif prt is ConsensusProtocol.FNP2:
 		return net.sybils_win_fnp2()
+	elif prt is ConsensusProtocol.MAJORITY:
+		return net.sybils_win_majority()
 	raise NotImplementedError('Consensus protocol \'%s\' is not implemented (yet).' % (prt.value,))
 
 
