@@ -17,6 +17,8 @@ class ConsensusProtocol(Enum):
 	PROOF_OF_STAKE = 'pos'
 	PROOF_OF_ACTIVITY = 'poa'
 	ALGORAND_PROOF = 'algorand'
+	OUROBOROS = 'ouroboros'
+	AVALANCHE = 'avalanche'
 	FNP2 = 'fnp2'
 	CONNITZER_TWO_ALT = 'conn_two'
 	CONNITZER_MANY_ALT = 'conn_many'
@@ -188,9 +190,6 @@ class Network:
 		else:
 			return False
 
-
-
-
 def sybils_win_consensus_round(
 		net: Network,
 		prt: ConsensusProtocol,
@@ -226,6 +225,16 @@ def sybils_win_consensus_round(
 		return \
 			sybils_win_consensus_round(net, ConsensusProtocol.PROOF_OF_ACTIVITY, coalition_size, rng) and \
 			sybils_win_consensus_round(net, ConsensusProtocol.PROOF_OF_ACTIVITY, coalition_size, rng)
+	elif prt is ConsensusProtocol.OUROBOROS:
+		# Committee members are block leaders
+		# There is one block leader per block, in this sense we have simple PoS
+		# But persistence is achieved by longest chain which depends on the committee composition
+		return sybils_win_consensus_round(net, ConsensusProtocol.PROOF_OF_STAKE, rng) and \
+			sybils_win_consensus_round(net, ConsensusProtocol.PROOF_OF_ACTIVITY, coalition_size, rng)
+	elif prt is ConsensusProtocol.AVALANCHE:
+		# assuming a fully connected graph the protocol approximates committee voting
+		# 	with a committee size of all nodes
+		return sybils_win_consensus_round(net, ConsensusProtocol.PROOF_OF_ACTIVITY, net.n, rng)
 	elif prt is ConsensusProtocol.CONNITZER_TWO_ALT:
 		if net.network_reached_unanimous_two_alternative_decision():
 			return False
