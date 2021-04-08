@@ -16,9 +16,9 @@ __pycache__/
 *.jpg
 *.jpeg
 *.pdf
-*.csv
-!sybil_resiliency/results/*.csv
-!sybil_resiliency/results/**/*.csv
+# *.csv
+# !sybil_resiliency/results/*.csv
+# !sybil_resiliency/results/**/*.csv
 
 # R
 .Rhistory
