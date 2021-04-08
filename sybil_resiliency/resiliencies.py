@@ -33,7 +33,7 @@ class Network:
 	SYBILS_PER_ADVERSARY_MIN_MAX: Tuple[int, int] = (10, 20)  # both ends inclusive
 	COMPUTING_POWER_ALPHA: float = float(np.log(5) / np.log(4))  # to get close to the 80-20 rule
 	ASSET_SIZE_ALPHA: float = float(np.log(5) / np.log(4))
-	COST: float = float(0.15)  # Conitzer 0.15 cost
+	COST: float = float(0.01)  # Conitzer 0.15 cost
 
 	class TwoAlternativeElection:
 
@@ -59,7 +59,12 @@ class Network:
 				a=Network.TwoAlternativeElection.ALTERNATIVES, size=self._num_honest,
 				replace=True)
 			ctr = Counter(choices)
-			self.honest_majority_choice = max(ctr)
+			if len(ctr) > 0:
+				self.honest_majority_choice = max(ctr)
+			else:
+				# Just pick a when there are no honest nodes
+				self.honest_majority_choice = 'a'
+
 			num_sybils = self._n - self._num_honest
 			self.sybil_choice: str = self._rng.choice(a=Network.TwoAlternativeElection.ALTERNATIVES)
 			if self.sybil_choice == Network.TwoAlternativeElection.ALTERNATIVES[0]:
@@ -71,7 +76,7 @@ class Network:
 
 	def __init__(
 			self,
-			num_honest: int,
+			num_total: int,
 			num_adversary: int,
 			sybils_per_adversary: Optional[Tuple[int]] = None,
 			rng: Optional[np.random.Generator] = None) -> None:
@@ -83,7 +88,7 @@ class Network:
 		:param sybils_per_adversary: Optional. A listing of the number of sybils each adversary possesses.
 		:param rng: Optional. A random number generator to generate the network with.
 		"""
-		self._num_honest = num_honest
+		self._num_total = num_total
 		self._num_adversaries = num_adversary
 		self._rng = rng if rng is not None else np.random.default_rng()
 		if sybils_per_adversary is None:
@@ -93,7 +98,10 @@ class Network:
 				size=self._num_adversaries))
 		else:
 			self._sybils_per_adversary = sybils_per_adversary
+
+		self._num_honest = self._num_total - int(np.sum(self._sybils_per_adversary))	
 		self.n: int = self._num_honest + int(np.sum(self._sybils_per_adversary))
+		print("n = %d, honest = %d, sybil = %d" % (self.n, self._num_honest, int(np.sum(self._sybils_per_adversary))))
 		self.computing_powers = self._user_computing_powers()
 		self.asset_sizes = self._user_asset_sizes()
 
@@ -295,8 +303,9 @@ class SybilResiliencyExperiment:
 
 	def __init__(
 			self,
-			num_honest: int,
+			num_total: int,
 			num_adversary: int,
+			sybils_per_adversary: int,
 			num_episodes: int,
 			num_iterations: int,
 			protocols: Tuple[ConsensusProtocol, ...] = tuple(ConsensusProtocol),
@@ -313,8 +322,9 @@ class SybilResiliencyExperiment:
 		:param coalition_size: Only required for coalition-dependent protocols. The coalition's number of identities.
 		:param rng: A random number generator to draw randomness from.
 		"""
-		self._num_honest = num_honest
+		self._num_total = num_total
 		self._num_adversary = num_adversary
+		self._sybils_per_adversary = [sybils_per_adversary,]
 		self._num_episodes = num_episodes
 		self._num_iterations = num_iterations
 		self._protocols = protocols
@@ -331,7 +341,7 @@ class SybilResiliencyExperiment:
 		for epi in range(self._num_episodes):
 			if (epi + 1) % SybilResiliencyExperiment.LOG_FREQUENCY == 0:
 				print('\t%d / %d' % (epi + 1, self._num_episodes))
-			net = Network(self._num_honest, self._num_adversary, rng=self._rng)
+			net = Network(self._num_total, self._num_adversary, self._sybils_per_adversary, rng=self._rng)
 			for prt_index, prt in enumerate(self._protocols):
 				for itr in range(self._num_iterations):
 					self.sybil_wins[prt_index, epi, itr] = \
@@ -359,11 +369,12 @@ if __name__ == '__main__':
 	all_protocols: Tuple[ConsensusProtocol, ...] = tuple(ConsensusProtocol)  # include 'em all
 	col_siz: int = int(5e0)
 	t_start: float = time.time()
-	for n_honest in (100,):
+	for n_total in (100,):
 		for n_adversary in (1,):
-			print('EXPERIMENT (honest: %d, adversary: %d).' % (n_honest, n_adversary))
-			t_start_exp: float = time.time()
-			sre = SybilResiliencyExperiment(n_honest, n_adversary, num_eps, num_its, all_protocols, col_siz)
-			sre.save('results', 'exp-%d-hon-%d-adv' % (n_honest, n_adversary))
-			print('\tDone. Took %.1lf sec.' % (time.time() - t_start_exp))
+			for n_sybils in range(1,101):
+				print('EXPERIMENT (total: %d, adversary: %d, sybils: %d).' % (n_total, n_adversary, n_sybils))
+				t_start_exp: float = time.time()
+				sre = SybilResiliencyExperiment(n_total, n_adversary, n_sybils, num_eps, num_its, all_protocols, col_siz)
+				sre.save('results', 'exp-%d-tot-%d-syb' % (n_total, n_sybils))
+				print('\tDone. Took %.1lf sec.' % (time.time() - t_start_exp))
 	print('ALL EXPERIMENTS DONE. TOOK %.0lf min' % ((time.time() - t_start) / 60.0,))
